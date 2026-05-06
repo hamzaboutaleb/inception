@@ -2,7 +2,7 @@ FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends mariadb-server mariadb-client \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* /var/lib/mysql/*
 
 EXPOSE 3306
 
@@ -15,4 +15,6 @@ ENTRYPOINT ["/usr/local/bin/mariadb-entrypoint.sh"]
 CMD ["mariadbd"]
 
 HEALTHCHECK --interval=10s --timeout=5s --retries=5 \
-    CMD mariadb-admin ping --protocol=socket --socket=/run/mysqld/mysqld.sock --silent || exit 1
+    CMD root_password="$(cat /run/secrets/db_root_password)" \
+    && mariadb-admin ping --protocol=socket --socket=/run/mysqld/mysqld.sock -uroot -p"$root_password" --silent \
+    || exit 1
