@@ -1,4 +1,20 @@
 services:
+  nginx:
+    build: ./requirements/nginx
+    image: nginx
+    container_name: nginx
+    restart: unless-stopped
+    depends_on:
+      - wordpress
+    environment:
+      NGINX_HOST: ${NGINX_HOST}
+    ports:
+      - "443:443"
+    networks:
+      - inception
+    volumes:
+      - wordpress_data:/var/www/html:ro
+
   mariadb:
     build: ./requirements/mariadb
     image: mariadb
@@ -12,8 +28,43 @@ services:
       MARIADB_USER: ${MARIADB_USER}
       MARIADB_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
       MARIADB_PASSWORD_FILE: /run/secrets/db_password
+    networks:
+      - inception
     volumes:
       - mariadb_data:/var/lib/mysql
+
+  wordpress:
+    build: ./requirements/wordpress
+    image: wordpress
+    container_name: wordpress
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    secrets:
+      - db_password
+      - db_wordpress_password
+    environment:
+      WORDPRESS_DB_HOST: mariadb
+      WORDPRESS_DB_NAME: ${MARIADB_DATABASE}
+      WORDPRESS_DB_USER: ${MARIADB_USER}
+      WORDPRESS_DB_PASSWORD_FILE: /run/secrets/db_password
+      WORDPRESS_TITLE: ${WORDPRESS_TITLE}
+      WORDPRESS_URL: ${WORDPRESS_URL}
+      WORDPRESS_ADMIN_USER: ${WORDPRESS_ADMIN_USER}
+      WORDPRESS_ADMIN_EMAIL: ${WORDPRESS_ADMIN_EMAIL}
+      WORDPRESS_ADMIN_PASSWORD_FILE: /run/secrets/db_wordpress_password
+      WORDPRESS_USER: ${WORDPRESS_USER}
+      WORDPRESS_USER_EMAIL: ${WORDPRESS_USER_EMAIL}
+      WORDPRESS_USER_PASSWORD_FILE: /run/secrets/db_wordpress_password
+    networks:
+      - inception
+    volumes:
+      - wordpress_data:/var/www/html
+
+networks:
+  inception:
+    driver: bridge
 
 volumes:
   mariadb_data:
@@ -22,15 +73,17 @@ volumes:
       type: none
       o: bind
       device: /home/hboutaleb/data/mariadb
-#   wordpress_data:
-#     driver: local
-#     driver_opts:
-#       type: none
-#       o: bind
-#       device: /home/hboutale/data/wordpress
+  wordpress_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/hboutaleb/data/wordpress
 
 secrets:
   db_password:
     file: ../secrets/db_password.txt
   db_root_password:
     file: ../secrets/db_root_password.txt
+  db_wordpress_password:
+    file: ../secrets/db_wordpress_password.txt

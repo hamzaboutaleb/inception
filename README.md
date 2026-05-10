@@ -1,58 +1,99 @@
-This project has been created as part of the 42 curriculum by hboutale
+*This project has been created as part of the 42 curriculum by hboutaleb.*
 
 # Description
 
-this project focuses about learning containerization using docker and docker compose.
-goal is design and deploy multi-service application.
+Inception is a system administration project focused on building a small containerized web infrastructure with Docker Compose.
 
-The project consists of setting up several interconnected services such as a web server, a database, and supporting components each running in its own container. Using Docker Compose, these services are orchestrated to communicate efficiently within a defined network.
+The stack contains three services:
 
-the project demonstrates key concepts including container lifecycle management, service orchestration, networking between containers, and environment configuration. The overall objective is to build a structured, scalable, and maintainable system that reflects real-world deployment practices.
+- NGINX as the only public entrypoint, serving HTTPS on port `443`.
+- WordPress with PHP-FPM for the application runtime.
+- MariaDB for persistent WordPress data.
+
+Each service is built from its own Dockerfile. The containers communicate through a Docker bridge network named `inception`, and persistent data is stored in Docker named volumes.
 
 # Instructions
 
-To build and run this project, ensure that Docker and Docker Compose are installed on your system.
-
-## Installation
-
-Clone the repository and navigate to the project directory:
-
-```sh
-git clone <repository_url>
-cd <project_directory>
-```
-
-## Usage
-
-All operations are managed through the Makefile:
-
-### Build and start the services:
+Build and start the stack from the repository root:
 
 ```sh
 make up
 ```
 
-### Stop the services:
+Stop the stack:
 
 ```sh
 make down
 ```
 
-### Rebuild the project:
+Rebuild from a clean Compose state:
 
 ```sh
 make re
 ```
 
-### View logs:
+Show logs:
 
 ```sh
 make logs
 ```
 
+Show container status:
+
+```sh
+make ps
+```
+
+The local development URL is:
+
+```text
+https://localhost
+```
+
+For subject validation, configure the project to use:
+
+```text
+https://hboutaleb.42.fr
+```
+
+# Design Choices
+
+## Virtual Machines Vs Docker
+
+A virtual machine runs a complete guest operating system on top of a hypervisor. Docker containers share the host kernel and isolate processes with namespaces, cgroups, filesystems, and networks. For this project, containers are lighter, faster to rebuild, and easier to compose into separate services.
+
+## Secrets Vs Environment Variables
+
+Environment variables are useful for non-confidential configuration such as service names, database names, and domain names. Secrets are better for passwords because they are mounted as files and do not need to be written in Dockerfiles or Compose environment values.
+
+## Docker Network Vs Host Network
+
+A Docker bridge network isolates the project services while still allowing containers to resolve each other by service name. Host networking would remove that isolation and is forbidden by the subject.
+
+## Docker Volumes Vs Bind Mounts
+
+Docker volumes are managed by Docker and keep service data persistent across container rebuilds. This project uses named volumes for MariaDB data and WordPress files, with host storage configured under `/home/hboutaleb/data`.
+
+# Documentation
+
+User documentation:
+
+```text
+USER_DOC.md
+```
+
+Developer documentation:
+
+```text
+DEV_DOC.md
+```
+
 # Resources
 
-- [Docker Resources](https://docs.docker.com/get-started/resources/)
-- [Docker Curriculum](https://docker-curriculum.com/)
-- [Docker mooc](https://courses.mooc.fi/org/uh-cs/courses/devops-with-docker/chapter-1)
-- [docker training course for the absolute beginner](https://learn.kodekloud.com/courses/docker-training-course-for-the-absolute-beginner)
+- Docker documentation: https://docs.docker.com/
+- Docker Compose documentation: https://docs.docker.com/compose/
+- NGINX documentation: https://nginx.org/en/docs/
+- WordPress CLI documentation: https://wp-cli.org/
+- MariaDB documentation: https://mariadb.org/documentation/
+
+AI assistance was used to review the project requirements, compare the implementation with the subject, and draft operational documentation. The generated content was checked against the local files and tested with Docker Compose commands.
