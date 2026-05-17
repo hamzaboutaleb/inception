@@ -72,6 +72,8 @@ require_env WORDPRESS_USER
 require_env WORDPRESS_USER_EMAIL
 require_env WORDPRESS_USER_PASSWORD
 
+WORDPRESS_REDIS_PORT="${WORDPRESS_REDIS_PORT:-6379}"
+
 validate_admin_username
 
 if [ "$WORDPRESS_ADMIN_USER" = "$WORDPRESS_USER" ]; then
@@ -103,7 +105,7 @@ done
 
 mkdir -p "$WORDPRESS_DIR"
 
-if [ -z "$(find "$WORDPRESS_DIR" -mindepth 1 -maxdepth 1 -print -quit)" ]; then
+if [ ! -f "$WORDPRESS_DIR/wp-load.php" ]; then
 	echo "Copying WordPress files into $WORDPRESS_DIR..."
 	cp -a "$WORDPRESS_SOURCE/." "$WORDPRESS_DIR/"
 fi
@@ -136,6 +138,15 @@ wp_cli config set DB_USER "$WORDPRESS_DB_USER" --type=constant >/dev/null
 wp_cli config set DB_PASSWORD "$WORDPRESS_DB_PASSWORD" --type=constant >/dev/null
 wp_cli config set DB_HOST "$WORDPRESS_DB_HOST" --type=constant >/dev/null
 
+if [ -n "${WORDPRESS_REDIS_HOST:-}" ]; then
+	wp_cli config set WP_REDIS_HOST "$WORDPRESS_REDIS_HOST" --type=constant \
+		--anchor="require_once ABSPATH . 'wp-settings.php';" >/dev/null
+	wp_cli config set WP_REDIS_PORT "$WORDPRESS_REDIS_PORT" --type=constant --raw \
+		--anchor="require_once ABSPATH . 'wp-settings.php';" >/dev/null
+	wp_cli config set WP_CACHE true --type=constant --raw \
+		--anchor="require_once ABSPATH . 'wp-settings.php';" >/dev/null
+fi
+
 if ! wp_cli core is-installed >/dev/null 2>&1; then
 	echo "Installing WordPress..."
 
@@ -155,6 +166,16 @@ if ! wp_cli user get "$WORDPRESS_USER" >/dev/null 2>&1; then
 	wp_cli user create "$WORDPRESS_USER" "$WORDPRESS_USER_EMAIL" \
 		--user_pass="$WORDPRESS_USER_PASSWORD" \
 		--role=subscriber
+fi
+
+if [ -n "${WORDPRESS_REDIS_HOST:-}" ]; then
+	if [ ! -d "$WORDPRESS_DIR/wp-content/plugins/redis-cache" ] \
+		&& [ -d "$WORDPRESS_SOURCE/wp-content/plugins/redis-cache" ]; then
+		cp -a "$WORDPRESS_SOURCE/wp-content/plugins/redis-cache" "$WORDPRESS_DIR/wp-content/plugins/"
+	fi
+
+	wp_cli plugin activate redis-cache >/dev/null
+	wp_cli redis enable >/dev/null 2>&1 || true
 fi
 
 if [ "$(wp_cli user list --field=ID | wc -l)" -lt 2 ]; then

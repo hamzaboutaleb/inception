@@ -7,14 +7,14 @@ Install Docker with the Compose plugin on the host machine.
 Create the persistent data directories:
 
 ```sh
-mkdir -p /home/hboutaleb/data/mariadb /home/hboutaleb/data/wordpress
+mkdir -p /home/hboutale/data/mariadb /home/hboutale/data/wordpress
 ```
 
 The Makefile also creates these directories automatically before building or starting.
 
 ## Configuration
 
-Edit non-secret values in:
+Edit configuration values in the `.env` file created for the evaluation:
 
 ```text
 srcs/.env
@@ -35,27 +35,28 @@ Important variables:
 For validation, use your 42 domain:
 
 ```text
-WORDPRESS_URL=https://hboutaleb.42.fr
-NGINX_HOST=hboutaleb.42.fr
+WORDPRESS_URL=https://hboutale.42.fr
+NGINX_HOST=hboutale.42.fr
 ```
 
 Add this to `/etc/hosts` on the VM if needed:
 
 ```text
-127.0.0.1 hboutaleb.42.fr
+127.0.0.1 hboutale.42.fr
 ```
 
-## Secrets
+## Credentials
 
-Secret values are read from files mounted by Docker Compose:
+Credential values are read from `srcs/.env`:
 
 ```text
-secrets/db_password.txt
-secrets/db_root_password.txt
-secrets/db_wordpress_password.txt
+MARIADB_ROOT_PASSWORD
+MARIADB_PASSWORD
+WORDPRESS_ADMIN_PASSWORD
+WORDPRESS_USER_PASSWORD
 ```
 
-Do not put passwords in Dockerfiles. Do not commit real credentials to the repository.
+Do not put passwords in Dockerfiles. Do not commit real credentials or extra credential files to the repository.
 
 ## Build And Launch
 
@@ -99,6 +100,9 @@ srcs/requirements/nginx/conf/default.conf
 srcs/requirements/nginx/tools/entry.sh
 srcs/requirements/wordpress/Dockerfile
 srcs/requirements/wordpress/tools/entry.sh
+srcs/requirements/bonus/adminer/Dockerfile
+srcs/requirements/bonus/redis/Dockerfile
+srcs/requirements/bonus/redis/conf/redis.conf
 srcs/requirements/mariadb/Dockerfile
 srcs/requirements/mariadb/conf/mariadb.cnf
 srcs/requirements/mariadb/tools/entry.sh
@@ -107,8 +111,10 @@ srcs/requirements/mariadb/tools/entry.sh
 ## Containers
 
 - `nginx`: Debian-based NGINX with a self-signed TLS certificate generated at startup if missing.
-- `wordpress`: Debian-based WordPress + PHP-FPM image. The entrypoint waits for MariaDB, creates `wp-config.php`, installs WordPress, and ensures two users exist.
+- `wordpress`: Debian-based WordPress + PHP-FPM image. The entrypoint waits for MariaDB, creates `wp-config.php`, installs WordPress, enables Redis object caching, and ensures two users exist.
 - `mariadb`: Debian-based MariaDB image. The entrypoint initializes the database on first startup.
+- `adminer`: Debian-based Adminer bonus service, reachable through NGINX at `/adminer/`.
+- `redis`: Debian-based Redis bonus service used by WordPress for object caching.
 
 ## Network
 
@@ -120,7 +126,7 @@ networks:
     driver: bridge
 ```
 
-This allows containers to resolve each other by service name, for example `wordpress` connects to `mariadb`, and `nginx` forwards PHP requests to `wordpress:9000`.
+This allows containers to resolve each other by service name, for example `wordpress` connects to `mariadb` and `redis`, `nginx` forwards PHP requests to `wordpress:9000`, and NGINX proxies Adminer requests to `adminer:8080`.
 
 Only NGINX publishes a host port:
 
@@ -139,8 +145,8 @@ The project uses two Docker named volumes:
 Their data is stored under:
 
 ```text
-/home/hboutaleb/data/mariadb
-/home/hboutaleb/data/wordpress
+/home/hboutale/data/mariadb
+/home/hboutale/data/wordpress
 ```
 
 ## Useful Checks
@@ -170,3 +176,24 @@ Check MariaDB from WordPress:
 docker compose -f srcs/docker-compose.yml --env-file srcs/.env exec wordpress \
 	wp --allow-root --path=/var/www/html db check
 ```
+
+Check Redis:
+
+```sh
+docker compose -f srcs/docker-compose.yml --env-file srcs/.env exec redis redis-cli ping
+```
+
+Check WordPress Redis cache status:
+
+```sh
+docker compose -f srcs/docker-compose.yml --env-file srcs/.env exec wordpress \
+	wp --allow-root --path=/var/www/html redis status
+```
+
+Open Adminer:
+
+```text
+https://hboutale.42.fr/adminer/
+```
+
+Use `mariadb` as the database server name, then log in with the MariaDB user and password from `srcs/.env`.

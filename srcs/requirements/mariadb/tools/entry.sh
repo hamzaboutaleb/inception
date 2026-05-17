@@ -99,51 +99,28 @@ if [ ! -d "$DATADIR/mysql" ]; then
 	chown -R mysql:mysql "$DATADIR"
 	mariadb-install-db --user=mysql --datadir="$DATADIR"
 
-	su -s /bin/sh mysql -c "mariadbd --skip-networking --socket=$SOCKET --datadir=$DATADIR" &
-	pid="$!"
+	init_sql="$RUNDIR/init.sql"
 
-	echo "Waiting for MariaDB to become ready..."
-
-	for i in $(seq 1 30); do
-		if mariadb --protocol=socket --socket="$SOCKET" -uroot -e "SELECT 1" >/dev/null 2>&1; then
-			break
-		fi
-
-		if ! kill -0 "$pid" 2>/dev/null; then
-			echo "Error: temporary MariaDB server failed to start."
-			exit 1
-		fi
-
-		sleep 1
-
-		if [ "$i" -eq 30 ]; then
-			echo "Error: MariaDB did not become ready in time."
-			exit 1
-		fi
-	done
-
-	echo "Setting root password..."
-
-	mariadb --protocol=socket --socket="$SOCKET" -uroot <<EOF
+	cat > "$init_sql" <<EOF
 ALTER USER 'root'@'localhost' IDENTIFIED BY '${MARIADB_ROOT_PASSWORD}';
 DELETE FROM mysql.user WHERE User='';
 DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost');
 DROP DATABASE IF EXISTS test;
 DELETE FROM mysql.db WHERE Db='test' OR Db LIKE 'test\\_%';
-FLUSH PRIVILEGES;
 EOF
 
 	if [ -n "${MARIADB_DATABASE:-}" ]; then
 		echo "Creating database: $MARIADB_DATABASE"
 
-		mariadb --protocol=socket --socket="$SOCKET" -uroot -p"${MARIADB_ROOT_PASSWORD}" \
-			-e "CREATE DATABASE IF NOT EXISTS \`$MARIADB_DATABASE\`;"
+		cat >> "$init_sql" <<EOF
+CREATE DATABASE IF NOT EXISTS \`$MARIADB_DATABASE\`;
+EOF
 	fi
 
 	if [ -n "${MARIADB_USER:-}" ] && [ -n "${MARIADB_PASSWORD:-}" ]; then
 		echo "Creating user: $MARIADB_USER"
 
-		mariadb --protocol=socket --socket="$SOCKET" -uroot -p"${MARIADB_ROOT_PASSWORD}" <<EOF
+		cat >> "$init_sql" <<EOF
 CREATE USER IF NOT EXISTS '$MARIADB_USER'@'%' IDENTIFIED BY '$MARIADB_PASSWORD';
 CREATE USER IF NOT EXISTS '$MARIADB_USER'@'localhost' IDENTIFIED BY '$MARIADB_PASSWORD';
 EOF
@@ -151,21 +128,22 @@ EOF
 		if [ -n "${MARIADB_DATABASE:-}" ]; then
 			echo "Granting privileges on database: $MARIADB_DATABASE"
 
-			mariadb --protocol=socket --socket="$SOCKET" -uroot -p"${MARIADB_ROOT_PASSWORD}" <<EOF
+			cat >> "$init_sql" <<EOF
 GRANT ALL PRIVILEGES ON \`$MARIADB_DATABASE\`.* TO '$MARIADB_USER'@'%';
 GRANT ALL PRIVILEGES ON \`$MARIADB_DATABASE\`.* TO '$MARIADB_USER'@'localhost';
-FLUSH PRIVILEGES;
 EOF
 		fi
 	fi
 
-	echo "Stopping temporary MariaDB server..."
+	cat >> "$init_sql" <<EOF
+FLUSH PRIVILEGES;
+EOF
 
-	mariadb-admin --protocol=socket --socket="$SOCKET" -uroot -p"${MARIADB_ROOT_PASSWORD}" shutdown
+	chown mysql:mysql "$init_sql"
+	chmod 600 "$init_sql"
 
-	wait "$pid"
-
-	echo "MariaDB initialization complete."
+	echo "Starting MariaDB with initial configuration..."
+	exec su -s /bin/sh mysql -c "$* --init-file=$init_sql"
 else
 	echo "MariaDB data directory already initialized."
 fi

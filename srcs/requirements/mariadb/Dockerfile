@@ -15,6 +15,5 @@ ENTRYPOINT ["/usr/local/bin/mariadb-entrypoint.sh"]
 CMD ["mariadbd"]
 
 HEALTHCHECK --interval=10s --timeout=5s --retries=5 \
-    CMD root_password="$(cat /run/secrets/db_root_password)" \
-    && mariadb-admin ping --protocol=socket --socket=/run/mysqld/mysqld.sock -uroot -p"$root_password" --silent \
+    CMD mariadb-admin ping --protocol=socket --socket=/run/mysqld/mysqld.sock -uroot -p"$MARIADB_ROOT_PASSWORD" --silent \
     || exit 1

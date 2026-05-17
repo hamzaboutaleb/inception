@@ -6,6 +6,7 @@ services:
     restart: unless-stopped
     depends_on:
       - wordpress
+      - adminer
     environment:
       NGINX_HOST: ${NGINX_HOST}
     ports:
@@ -20,14 +21,11 @@ services:
     image: mariadb
     container_name: mariadb
     restart: unless-stopped
-    secrets:
-      - db_password
-      - db_root_password
     environment:
       MARIADB_DATABASE: ${MARIADB_DATABASE}
       MARIADB_USER: ${MARIADB_USER}
-      MARIADB_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
-      MARIADB_PASSWORD_FILE: /run/secrets/db_password
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
     networks:
       - inception
     volumes:
@@ -41,26 +39,46 @@ services:
     depends_on:
       mariadb:
         condition: service_healthy
-    secrets:
-      - db_password
-      - db_wordpress_password
+      redis:
+        condition: service_healthy
     environment:
       WORDPRESS_DB_HOST: mariadb
       WORDPRESS_DB_NAME: ${MARIADB_DATABASE}
       WORDPRESS_DB_USER: ${MARIADB_USER}
-      WORDPRESS_DB_PASSWORD_FILE: /run/secrets/db_password
+      WORDPRESS_DB_PASSWORD: ${MARIADB_PASSWORD}
       WORDPRESS_TITLE: ${WORDPRESS_TITLE}
       WORDPRESS_URL: ${WORDPRESS_URL}
       WORDPRESS_ADMIN_USER: ${WORDPRESS_ADMIN_USER}
       WORDPRESS_ADMIN_EMAIL: ${WORDPRESS_ADMIN_EMAIL}
-      WORDPRESS_ADMIN_PASSWORD_FILE: /run/secrets/db_wordpress_password
+      WORDPRESS_ADMIN_PASSWORD: ${WORDPRESS_ADMIN_PASSWORD}
       WORDPRESS_USER: ${WORDPRESS_USER}
       WORDPRESS_USER_EMAIL: ${WORDPRESS_USER_EMAIL}
-      WORDPRESS_USER_PASSWORD_FILE: /run/secrets/db_wordpress_password
+      WORDPRESS_USER_PASSWORD: ${WORDPRESS_USER_PASSWORD}
+      WORDPRESS_REDIS_HOST: redis
+      WORDPRESS_REDIS_PORT: 6379
     networks:
       - inception
     volumes:
       - wordpress_data:/var/www/html
+
+  redis:
+    build: ./requirements/bonus/redis
+    image: redis
+    container_name: redis
+    restart: unless-stopped
+    networks:
+      - inception
+
+  adminer:
+    build: ./requirements/bonus/adminer
+    image: adminer
+    container_name: adminer
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - inception
 
 networks:
   inception:
@@ -72,18 +90,10 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: /home/hboutaleb/data/mariadb
+      device: /home/${LOGIN}/data/mariadb
   wordpress_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: /home/hboutaleb/data/wordpress
-
-secrets:
-  db_password:
-    file: ../secrets/db_password.txt
-  db_root_password:
-    file: ../secrets/db_root_password.txt
-  db_wordpress_password:
-    file: ../secrets/db_wordpress_password.txt
+      device: /home/${LOGIN}/data/wordpress

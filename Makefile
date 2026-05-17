@@ -1,7 +1,8 @@
 COMPOSE_FILE	= srcs/docker-compose.yml
 ENV_FILE		= srcs/.env
-COMPOSE			= docker compose -f $(COMPOSE_FILE) --env-file $(ENV_FILE)
-DATA_DIR		= /home/hboutaleb/data
+LOGIN			?= hboutale
+COMPOSE			= LOGIN=$(LOGIN) docker compose -f $(COMPOSE_FILE) --env-file $(ENV_FILE)
+DATA_DIR		= /home/$(LOGIN)/data
 
 .PHONY: all dirs build up down stop restart logs ps status config clean fclean re
 
