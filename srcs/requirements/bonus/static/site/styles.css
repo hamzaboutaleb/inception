@@ -1,0 +1,151 @@
+:root {
+	--bg: #0f1115;
+	--panel: #171b22;
+	--ink: #f4f7fb;
+	--muted: #aab4c0;
+	--line: #2a303b;
+	--green: #00d084;
+	--yellow: #f5c542;
+	--red: #ff5f57;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	min-height: 100vh;
+	background:
+		linear-gradient(135deg, rgba(0, 208, 132, 0.14), transparent 34%),
+		linear-gradient(315deg, rgba(245, 197, 66, 0.1), transparent 30%),
+		var(--bg);
+	color: var(--ink);
+	font-family: Arial, Helvetica, sans-serif;
+}
+
+.page {
+	width: min(1120px, calc(100% - 32px));
+	margin: 0 auto;
+	padding: 56px 0;
+}
+
+.hero {
+	min-height: 58vh;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(320px, 480px);
+	align-items: center;
+	gap: 40px;
+}
+
+.eyebrow {
+	margin: 0 0 16px;
+	color: var(--green);
+	font-size: 0.82rem;
+	font-weight: 700;
+	letter-spacing: 0;
+	text-transform: uppercase;
+}
+
+h1 {
+	margin: 0;
+	font-size: clamp(5rem, 18vw, 13rem);
+	line-height: 0.84;
+	letter-spacing: 0;
+}
+
+.intro {
+	max-width: 680px;
+	margin: 28px 0 0;
+	color: var(--muted);
+	font-size: 1.2rem;
+	line-height: 1.65;
+}
+
+.terminal {
+	overflow: hidden;
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	background: rgba(23, 27, 34, 0.92);
+	box-shadow: 0 22px 70px rgba(0, 0, 0, 0.35);
+}
+
+.terminal-bar {
+	display: flex;
+	gap: 8px;
+	padding: 14px;
+	border-bottom: 1px solid var(--line);
+}
+
+.terminal-bar span {
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background: var(--green);
+}
+
+.terminal-bar span:first-child {
+	background: var(--red);
+}
+
+.terminal-bar span:nth-child(2) {
+	background: var(--yellow);
+}
+
+pre {
+	margin: 0;
+	padding: 28px;
+	white-space: pre-wrap;
+	color: #d8ffe9;
+	font: 1rem/1.7 "Courier New", monospace;
+}
+
+code span {
+	color: var(--green);
+}
+
+.grid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 18px;
+}
+
+article {
+	min-height: 170px;
+	padding: 22px;
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	background: rgba(23, 27, 34, 0.82);
+}
+
+article strong {
+	display: block;
+	margin-bottom: 12px;
+	font-size: 1.05rem;
+}
+
+article p {
+	margin: 0;
+	color: var(--muted);
+	line-height: 1.55;
+}
+
+@media (max-width: 760px) {
+	.page {
+		padding: 32px 0;
+	}
+
+	.hero,
+	.grid {
+		grid-template-columns: 1fr;
+	}
+
+	.hero {
+		min-height: 0;
+		gap: 28px;
+	}
+
+	.intro {
+		font-size: 1.05rem;
+	}
+}

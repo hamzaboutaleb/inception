@@ -15,6 +15,7 @@ services:
       - inception
     volumes:
       - wordpress_data:/var/www/html:ro
+      - ./requirements/bonus/static/site:/var/www/static:ro
 
   mariadb:
     build: ./requirements/mariadb
@@ -79,6 +80,37 @@ services:
         condition: service_healthy
     networks:
       - inception
+
+  cadvisor:
+    build: ./requirements/bonus/cadvisor
+    image: cadvisor
+    container_name: cadvisor
+    restart: unless-stopped
+    privileged: true
+    networks:
+      - inception
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+
+  ftp:
+    build: ./requirements/bonus/ftp
+    image: ftp
+    container_name: ftp
+    restart: unless-stopped
+    environment:
+      FTP_USER: ${FTP_USER}
+      FTP_PASSWORD: ${FTP_PASSWORD}
+      FTP_HOST: ${NGINX_HOST}
+    ports:
+      - "21:21"
+      - "21100-21110:21100-21110"
+    networks:
+      - inception
+    volumes:
+      - wordpress_data:/var/www/html
 
 networks:
   inception:

@@ -1,4 +1,6 @@
 *
 !Dockerfile
+!conf/
+!conf/vsftpd.conf
 !tools/
 !tools/entry.sh
