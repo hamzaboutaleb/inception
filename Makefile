@@ -1,6 +1,6 @@
 COMPOSE_FILE	= srcs/docker-compose.yml
 ENV_FILE		= srcs/.env
-LOGIN			?= hboutale
+LOGIN			?= hboutaleb
 COMPOSE			= LOGIN=$(LOGIN) docker compose -f $(COMPOSE_FILE) --env-file $(ENV_FILE)
 DATA_DIR		= /home/$(LOGIN)/data
 

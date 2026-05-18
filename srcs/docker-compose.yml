@@ -15,7 +15,14 @@ services:
       - inception
     volumes:
       - wordpress_data:/var/www/html:ro
-      - ./requirements/bonus/static/site:/var/www/static:ro
+
+  static:
+    build: ./requirements/bonus/static
+    image: static
+    container_name: static
+    restart: unless-stopped
+    networks:
+      - inception
 
   mariadb:
     build: ./requirements/mariadb
@@ -94,6 +101,7 @@ services:
       - /var/run:/var/run:ro
       - /sys:/sys:ro
       - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
 
   ftp:
     build: ./requirements/bonus/ftp

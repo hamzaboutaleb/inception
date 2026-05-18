@@ -55,9 +55,17 @@ echo "$FTP_USER:$FTP_PASSWORD" | chpasswd
 echo "$FTP_USER" > /etc/vsftpd.userlist
 
 if [ -n "${FTP_HOST:-}" ]; then
+	pasv_address="$FTP_HOST"
+
+	case "$FTP_HOST" in
+		*[!0-9.]*)
+			pasv_address="$(getent hosts "$FTP_HOST" | awk '{ print $1; exit }')"
+			pasv_address="${pasv_address:-127.0.0.1}"
+			;;
+	esac
+
 	{
-		echo "pasv_addr_resolve=YES"
-		echo "pasv_address=$FTP_HOST"
+		echo "pasv_address=$pasv_address"
 	} >> /etc/vsftpd.conf
 fi
 
