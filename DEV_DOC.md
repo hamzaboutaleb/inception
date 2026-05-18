@@ -31,6 +31,8 @@ Important variables:
 - `WORDPRESS_ADMIN_EMAIL`
 - `WORDPRESS_USER`
 - `WORDPRESS_USER_EMAIL`
+- `FTP_USER`
+- `FTP_PASSWORD`
 
 For validation, use your 42 domain:
 
@@ -54,6 +56,7 @@ MARIADB_ROOT_PASSWORD
 MARIADB_PASSWORD
 WORDPRESS_ADMIN_PASSWORD
 WORDPRESS_USER_PASSWORD
+FTP_PASSWORD
 ```
 
 Do not put passwords in Dockerfiles. Do not commit real credentials or extra credential files to the repository.
@@ -100,13 +103,24 @@ srcs/requirements/nginx/conf/default.conf
 srcs/requirements/nginx/tools/entry.sh
 srcs/requirements/wordpress/Dockerfile
 srcs/requirements/wordpress/tools/entry.sh
-srcs/requirements/bonus/adminer/Dockerfile
+srcs/requirements/bonus/cadvisor/Dockerfile
+srcs/requirements/bonus/ftp/Dockerfile
+srcs/requirements/bonus/ftp/conf/vsftpd.conf
+srcs/requirements/bonus/ftp/tools/entry.sh
 srcs/requirements/bonus/redis/Dockerfile
+srcs/requirements/bonus/redis/conf/redis.conf
+srcs/requirements/bonus/static/Dockerfile
+srcs/requirements/bonus/static/conf/nginx.conf
+srcs/requirements/bonus/static/site/
 srcs/requirements/bonus/redis/conf/redis.conf
 srcs/requirements/mariadb/Dockerfile
 srcs/requirements/mariadb/conf/mariadb.cnf
 srcs/requirements/mariadb/tools/entry.sh
 ```
+
+- `ftp`: Debian-based vsftpd bonus service. Accessed via port 21, maps to WordPress data volume allowing file modifications.
+- `cadvisor`: Google cAdvisor image for monitoring container resources, reachable through NGINX at `/cadvisor/`.
+- `static`: Debian-based NGINX container serving a simple static portfolio site, reachable through NGINX at `/static/`.
 
 ## Containers
 
@@ -126,13 +140,15 @@ networks:
     driver: bridge
 ```
 
-This allows containers to resolve each other by service name, for example `wordpress` connects to `mariadb` and `redis`, `nginx` forwards PHP requests to `wordpress:9000`, and NGINX proxies Adminer requests to `adminer:8080`.
+This allows containers to resolve each other by service name, for example `wordpress` connects to `mariadb` and `redis`, `nginx` forwards PHP requests to `wordpress:9000`, and NGINX proxies requests to `adminer:8080`, `cadvisor:8080`, and `static:80`.
 
-Only NGINX publishes a host port:
+Only NGINX and FTP publish host ports:
 
 ```yaml
 ports:
-  - "443:443"
+  - "443:443" # nginx
+  - "21:21" # ftp
+  - "21100-21110:21100-21110" # ftp passive
 ```
 
 ## Volumes

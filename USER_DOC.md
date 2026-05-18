@@ -2,15 +2,18 @@
 
 ## Services
 
-This stack provides a WordPress website served through NGINX over HTTPS, plus Adminer and Redis bonus services.
+This stack provides a WordPress website served through NGINX over HTTPS, plus several bonus services: Adminer, Redis, FTP, cAdvisor, and a Static Website.
 
-- `nginx`: public entrypoint on port `443`, configured for TLSv1.2 and TLSv1.3.
+- `nginx`: public entrypoint on port `443`, configured for TLSv1.2 and TLSv1.3. Proxies requests to WordPress, Adminer, cAdvisor, and the Static site.
 - `wordpress`: WordPress with PHP-FPM, reachable only from the Docker network.
 - `mariadb`: database server, reachable only from the Docker network.
-- `adminer`: database administration interface, reachable through NGINX.
+- `adminer`: database administration interface, reachable through NGINX at `/adminer/`.
 - `redis`: object cache for WordPress, reachable only from the Docker network.
+- `ftp`: FTP server exposed on ports `21` and a passive port range `21100-21110`, sharing the WordPress data volume.
+- `cadvisor`: container metrics and monitoring, reachable through NGINX at `/cadvisor/`.
+- `static`: static HTML website serving a simple portfolio/resume, reachable through NGINX at `/static/`.
 
-Only NGINX is exposed to the host machine. WordPress, MariaDB, Adminer, and Redis do not publish host ports.
+Only NGINX and FTP are exposed to the host machine. The rest of the services do not publish host ports.
 
 ## Start And Stop
 
@@ -70,6 +73,24 @@ For the Adminer server field, use:
 
 ```text
 mariadb
+```
+
+The Static Site is available at:
+
+```text
+https://hboutale.42.fr/static/
+```
+
+cAdvisor is available at:
+
+```text
+https://hboutale.42.fr/cadvisor/
+```
+
+To access the FTP server, use an FTP client:
+
+```sh
+ftp hboutale.42.fr
 ```
 
 ## Credentials
